@@ -300,7 +300,8 @@ def get_parsed_args(parser, args):
         parser.error('Need a file (-f/--file) or a directory (-d/--directory) or an online file (-o/--online) as input.')
 
     if not args_parsed.url and not args_parsed.hosts_file:
-        parser.error('Need an url (-u/--url) or a hosts file (--hosts_file)')
+        if not args_parsed.nmap_file:
+            parser.error('Need an url (-u/--url) or a hosts file (--hosts_file)')
 
     return args_parsed
 
@@ -377,7 +378,7 @@ def main():
 
     if args.nmap_file:
         nmap_input = read_nmap_xml(args.nmap_file)
-        print(nmap_input)
+        # print(nmap_input)
         hosts = nmap_input
 
     print("Done parsing parameters")
