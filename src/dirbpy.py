@@ -3,25 +3,20 @@
 # -*- coding: utf-8 -*-
 
 
-#URLBruteforcer.py
 import glob
 import logging
-# import difflib
 import requests
-
-#main
 import sys
 import argparse
 
-
 from logging import Logger
 from urllib.parse import urljoin, urlparse
-from multiprocessing.dummy import Pool as ThreadPool
+#do not use Threads for now
+# from multiprocessing.dummy import Pool as ThreadPool
 
-
-def disable_https_warnings():
-    import urllib3
-    urllib3.disable_warnings()
+# def disable_https_warnings():
+#     import urllib3
+#     urllib3.disable_warnings()
 
 class URLBruteforcer():
     HTTPS_STR = 'https'
@@ -43,12 +38,12 @@ class URLBruteforcer():
                  duplicate_log:         bool   = True):
 
         self.host = host
-        if 'https' in urlparse(self.host).scheme:
-            disable_https_warnings()
+        # if 'https' in urlparse(self.host).scheme:
+        #     disable_https_warnings()
         self.word_dictionary = word_dictionary
         self.status_code = status_code
-        self.nb_thread = nb_thread
-        self.request_pool = ThreadPool(self.nb_thread)
+        # self.nb_thread = nb_thread
+        # self.request_pool = ThreadPool(self.nb_thread)
 
         if proxy == self.PROXY_DEFAULT_DICT:
             self.proxy = proxy
@@ -63,7 +58,7 @@ class URLBruteforcer():
             self.logged_message = []
             self.logger.addFilter(self.no_duplicate_log_filter)
 
-        print("Brute forces inited")
+        # print("Brute forces inited")
 
     def no_duplicate_log_filter(self, record) -> bool:
         if record.msg not in self.logged_message:
@@ -77,7 +72,11 @@ class URLBruteforcer():
         self.logger.info(self.SCANNING_URL_MESSAGE.format(url))
 
         url_completed = self._generate_complete_url_with_word(url)
-        directories_found = self.request_pool.map(self._request_thread, url_completed)
+        # directories_found = self.request_pool.map(self._request_thread, url_completed)
+        # directories_found = self._request_thread(url_completed)
+        for _url in url_completed:
+            directories_found = self._perfrom_request(_url);
+
         flat_list_of_directories = self._generate_fat_list_with_list_of_list(directories_found)
         dir_filtered = self._remove_invalid_url_from_directory_found(flat_list_of_directories, url)
         for directory in dir_filtered:
@@ -107,6 +106,7 @@ class URLBruteforcer():
 
     def _request_thread(self, complete_url: str) -> list:
         #Perfrom request from thread
+        # print("perfrom Request")
         try:
             response = requests.get(complete_url, proxies=self.proxy, verify=False)
         except requests.exceptions.ConnectionError:
@@ -118,6 +118,21 @@ class URLBruteforcer():
         else:
             return self._analyse_response(response)
             
+    def _perfrom_request(self, complete_url: str) -> list:
+        #Perfrom request from thread
+        # print("perfrom Request")
+        try:
+            response = requests.get(complete_url, proxies=self.proxy, verify=False)
+        except requests.exceptions.ConnectionError:
+            self.logger.warning("Connection refused: " + complete_url)
+            return []
+        except Exception as e:
+            self.logger.error(str(e) + '. URL: {}'.format(complete_url), exc_info=True)
+            return []
+        else:
+            return self._analyse_response(response)
+
+
     def _response_has_valid_status_code(self, response) -> bool:
         return response.status_code in self.status_code
 
@@ -185,23 +200,10 @@ class WordDictonary():
 
 ###main
 
-DIRBPY_COOL_LOOKING = '''
-________   .__        ___.
-\______ \  |__|_______\_ |__  ______  ___.__.
- |    |  \ |  |\_  __ \| __ \ \____ \<   |  |
- |    `   \|  | |  | \/| \_\ \|  |_> >\___  |
-/_______  /|__| |__|   |___  /|   __/ / ____|
-        \/                 \/ |__|    \/
-'''
-
-BLUE = "\033[1;34m"
-GREEN = "\033[0;32m"
-RESET = "\033[0;0m"
-
 NUMBER_OF_THREAD_PARAMETER_ERROR = 'The number of thread is to high. Current: {}, Max: {}'
 GENERATED_WORD_MESSAGE = "Generated words: {}"
 
-FORMAT = '{}[%(asctime)s]{} {}[%(levelname)s]{} %(message)s'.format(GREEN, RESET, BLUE, RESET)
+FORMAT = '[%(asctime)s] [%(levelname)s] %(message)s'
 logging.basicConfig(format=FORMAT, level=logging.INFO)
 ROOT_LOGGER = logging.getLogger()
 
@@ -251,7 +253,7 @@ def get_parser():
                         help='Input directory with dictionaries (.txt).')
     parser.add_argument('-t', '--thread',
                         type=number_of_thread,
-                        help='Number of thread, the max value is {}'.format(URLBruteforcer.MAX_NUMBER_REQUEST))
+                        help='Threads are disabled :( Number of thread, the max value is {}'.format(URLBruteforcer.MAX_NUMBER_REQUEST))
     parser.add_argument('-c', '--status-code',
                         nargs='*',
                         type=int,
@@ -300,7 +302,7 @@ def get_parsed_args(parser, args):
 
 
 def main():
-    print(DIRBPY_COOL_LOOKING)
+    # print(DIRBPY_COOL_LOOKING)
     # print('Author: {}'.format(__author__))
     # print('Version: {}\n'.format(__version__))
    
@@ -333,7 +335,8 @@ def main():
              }
 
     if args.save:
-        print("Saving output...? no JSONFormatter...   :(")
+        #TODO:
+        logging.error("Saving output...? no JSONFormatter...  ")
         # file_handler = logging.FileHandler(args.save)
         # formatter = FileJSONFormatter()
         # file_handler.setFormatter(formatter)
@@ -360,7 +363,6 @@ def main():
                 do_request_with_dictionary(opened_file, host, **params)
 
 
-#####
 
 if __name__ == "__main__":
     main()
