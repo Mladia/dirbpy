@@ -121,11 +121,11 @@ class URLBruteforcer():
             
     def _perfrom_request(self, complete_url: str) -> list:
         #Perfrom request from thread
-        print("Perfrom request " + complete_url)
+        # print("Perfrom request " + complete_url)
         try:
             response = requests.get(complete_url, proxies=self.proxy, verify=False)
         except requests.exceptions.ConnectionError:
-            self.logger.warning("Connection refused: " + complete_url)
+            # self.logger.warning("Connection refused: " + complete_url)
             return []
         except Exception as e:
             self.logger.error(str(e) + '. URL: {}'.format(complete_url), exc_info=True)
