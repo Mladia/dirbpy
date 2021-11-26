@@ -1,0 +1,18 @@
+Generated words: 1
+Scanning URL: http://webscantest.com/
+Generated words: 959
+Scanning URL: http://webscantest.com/
+Directory => http://webscantest.com/cart/ (Status code: 200)
+Directory => http://webscantest.com/css/ (Status code: 200)
+Directory => http://webscantest.com/icons/ (Status code: 403)
+Directory => http://webscantest.com/images/ (Status code: 200)
+Directory => http://webscantest.com/report/ (Status code: 200)
+http://webscantest.com/service (Status code: 503)
+http://webscantest.com/servlet (Status code: 503)
+Directory => http://webscantest.com/soap/ (Status code: 200)
+Directory => http://webscantest.com/ssi/ (Status code: 200)
+http://webscantest.com/vfs (Status code: 503)
+Generated words: 1
+Scanning URL: http://webscantest.com/
+Generated words: 1
+Scanning URL: http://webscantest.com/

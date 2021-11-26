@@ -8,6 +8,7 @@ import logging
 import requests
 import sys
 import argparse
+import xml.etree.ElementTree as ET
 
 from logging import Logger
 from urllib.parse import urljoin, urlparse
@@ -67,9 +68,9 @@ class URLBruteforcer():
         return False
 
     def send_requests_with_all_words(self, url: str = None) -> None:
-        # print("Sending request with all words")
         url = url or self.host
         self.logger.info(self.SCANNING_URL_MESSAGE.format(url))
+        print("Sending request with all words to " + str(url))
 
         url_completed = self._generate_complete_url_with_word(url)
         # directories_found = self.request_pool.map(self._request_thread, url_completed)
@@ -106,7 +107,7 @@ class URLBruteforcer():
 
     def _request_thread(self, complete_url: str) -> list:
         #Perfrom request from thread
-        # print("perfrom Request")
+        print("Perfrom request to " + complete_url)
         try:
             response = requests.get(complete_url, proxies=self.proxy, verify=False)
         except requests.exceptions.ConnectionError:
@@ -120,7 +121,7 @@ class URLBruteforcer():
             
     def _perfrom_request(self, complete_url: str) -> list:
         #Perfrom request from thread
-        # print("perfrom Request")
+        print("Perfrom request " + complete_url)
         try:
             response = requests.get(complete_url, proxies=self.proxy, verify=False)
         except requests.exceptions.ConnectionError:
@@ -284,6 +285,10 @@ def get_parser():
     parser.add_argument('--hosts-file',
                         type=argparse.FileType('r'),
                         help='File with urls to scan')
+    #TODO:
+    parser.add_argument('-n', '--nmap-file',
+                        type=str,
+                        help='Take as input an xml formatted name of file with nmap output generated with "nmap -n -oX nmap_output.xml -p-" ')
 
     return parser
 
@@ -300,6 +305,25 @@ def get_parsed_args(parser, args):
     return args_parsed
 
 
+def read_nmap_xml(nmap_output_filename) -> list:
+    print("Parsing " + nmap_output_filename)
+    root = ET.parse(nmap_output_filename).getroot()
+    nmap_ips = []
+    for child in root:
+        if child.tag == "host":
+            status = child[0].attrib["state"]
+            assert status =="up"
+            ports = []
+            address = child[1].attrib["addr"]
+            for port in child[3][1:]:
+                _port = port.attrib["portid"]
+                ports.append(_port)
+                nmap_ips.append("http://" + address + ":" + _port)
+    # print(nmap_ips)
+    return nmap_ips
+
+
+
 
 def main():
     # print(DIRBPY_COOL_LOOKING)
@@ -308,6 +332,8 @@ def main():
    
     parser = get_parser()
     args = get_parsed_args(parser, sys.argv[1:])
+
+    # print(args)
 
     if args.proxy:
         proxy = args.proxy[0]
@@ -335,21 +361,28 @@ def main():
              }
 
     if args.save:
-        #TODO:
-        logging.error("Saving output...? no JSONFormatter...  ")
-        # file_handler = logging.FileHandler(args.save)
+        #TODO: JSON Output?
+        # logging.error("Saving output...? no JSONFormatter...  ")
+        file_handler = logging.FileHandler(args.save)
         # formatter = FileJSONFormatter()
         # file_handler.setFormatter(formatter)
-        # ROOT_LOGGER.addHandler(file_handler)
+        ROOT_LOGGER.addHandler(file_handler)
+    
+
 
     hosts = []
     if args.hosts_file:
         hosts = args.hosts_file.readlines()
         hosts = [host.rstrip('\n') for host in hosts]
 
+    if args.nmap_file:
+        nmap_input = read_nmap_xml(args.nmap_file)
+        print(nmap_input)
+        hosts = nmap_input
 
     print("Done parsing parameters")
     for host in hosts or [args.url]:
+        print("For every host")
         if args.directory:
             for file in glob.glob("{}*.txt".format(args.directory if args.directory.endswith('/') else args.directory + '/')):
                 ROOT_LOGGER.info('Current file: {}'.format(file))
