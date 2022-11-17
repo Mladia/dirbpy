@@ -9,11 +9,9 @@ import requests
 import sys
 import argparse
 import xml.etree.ElementTree as ET
-
-from logging import Logger
 from urllib.parse import urljoin, urlparse
-#do not use Threads for now
-# from multiprocessing.dummy import Pool as ThreadPool
+from multiprocessing.dummy import Pool as ThreadPool
+from logging import Logger
 
 # def disable_https_warnings():
 #     import urllib3
@@ -35,9 +33,12 @@ class URLBruteforcer():
                  status_code:           list   = VALID_STATUS_CODE,
                  proxy:                 dict   = PROXY_DEFAULT_DICT,
                  directories_to_ignore: list   = [],
-                 logger:                Logger = logging.getLogger(__name__),
+                #  logger:                Logger = Logger.getLogger(__name__),
+                #  logger:                getLogger(__name__),
+                # logger:                 Logger = Logger.getLogger(__name__),
                  duplicate_log:         bool   = True):
 
+        logger = Logger.getLogger(__name__)
         self.host = host
         # if 'https' in urlparse(self.host).scheme:
         #     disable_https_warnings()
@@ -70,13 +71,12 @@ class URLBruteforcer():
     def send_requests_with_all_words(self, url: str = None) -> None:
         url = url or self.host
         self.logger.info(self.SCANNING_URL_MESSAGE.format(url))
-        #print("Sending request with all words to " + str(url))
+        print("Sending request with all words to " + str(url))
 
         url_completed = self._generate_complete_url_with_word(url)
-        #print("url_completed " + str(url_completed))
+        print("url_completed " + url_completed)
         # directories_found = self.request_pool.map(self._request_thread, url_completed)
         # directories_found = self._request_thread(url_completed)
-        url_completed.insert(0, url)
         for _url in url_completed:
             directories_found = self._perfrom_request(_url);
 
@@ -109,7 +109,7 @@ class URLBruteforcer():
 
     def _request_thread(self, complete_url: str) -> list:
         #Perfrom request from thread
-        #print("Perfrom request to " + complete_url)
+        print("Perfrom request to " + complete_url)
         try:
             response = requests.get(complete_url, proxies=self.proxy, verify=False)
         except requests.exceptions.ConnectionError:
@@ -123,11 +123,11 @@ class URLBruteforcer():
             
     def _perfrom_request(self, complete_url: str) -> list:
         #Perfrom request from thread
-        #print("Perfrom request " + complete_url)
+        # print("Perfrom request " + complete_url)
         try:
             response = requests.get(complete_url, proxies=self.proxy, verify=False)
         except requests.exceptions.ConnectionError:
-            self.logger.warning("Connection refused: " + complete_url)
+            # self.logger.warning("Connection refused: " + complete_url)
             return []
         except Exception as e:
             self.logger.error(str(e) + '. URL: {}'.format(complete_url), exc_info=True)
@@ -144,7 +144,6 @@ class URLBruteforcer():
         if self._response_has_valid_status_code(response):
             # We need to check for redirection, if we are redirected we want the first url
             # Normaly get redirected it returns a 200 status_code but it not always the real status code
-            #print(response.status_code)
             if response.history:
                 for response_in_history in response.history:
                     # Check if it's the same path
@@ -245,7 +244,7 @@ def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--url',
                         type=str,
-                        help='This is the url to scan, with the http at the beginning')
+                        help='This is the url to scan')
     parser.add_argument('-f', '--file',
                         type=str,
                         help='Input file with words.')
@@ -304,7 +303,7 @@ def get_parsed_args(parser, args):
 
     if not args_parsed.url and not args_parsed.hosts_file:
         if not args_parsed.nmap_file:
-            parser.error('Need an url (-u/--url URL with http:// at the beginning) or a hosts file (--hosts_file)')
+            parser.error('Need an url (-u/--url) or a hosts file (--hosts_file)')
 
     return args_parsed
 
